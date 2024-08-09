@@ -1,7 +1,6 @@
 require('dotenv').config();
 const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
-const bodyParser = require('body-parser');
 const token = process.env.TOKEN;
 const port = process.env.PORT || 4000;
 
@@ -15,7 +14,7 @@ bot.onText(/\/start/, (msg) => {
 });
 
 bot.onText(/\/balance/, (msg) => {
-    bot.sendMessage(msg.chat.id, 'Your current balance is $1000');
+    bot.sendMessage(msg.chat.id, `Your current balance is ${balance}`);
 });
 
 bot.onText(/\/bet (.+)/, (msg, match) => {
@@ -26,11 +25,24 @@ bot.onText(/\/bet (.+)/, (msg, match) => {
     }else if (isNaN(amount)) {
         bot.sendMessage(msg.chat.id, 'Please specify a valid bet amount!');
     } else {
-        bot.sendMessage(msg.chat.id, `You have placed a bet of $${amount}`);
-        balance -= amount
+        if(amount > balance){
+            bot.sendMessage(msg.chat.id, `You don't have enough balance to place a bet of $${amount}`);
+            return;
+        }else{
+            bot.sendMessage(msg.chat.id, `You have placed a bet of $${amount}`);
+            balance -= amount
+        }
     }
 });
 
+bot.onText(/\/add (.+)/ , (msg) => {
+    if (isNaN(amount)) {
+        bot.sendMessage(msg.chat.id, 'Please specify a valid bet amount!');
+    } else {
+        balance += amount;
+        bot.sendMessage(msg.chat.id, `You have added $${amount} to your balance`);
+    }
+});
 
 
 app.get('/', (req, res) => {
