@@ -35,10 +35,12 @@ bot.onText(/\/bet (.+)/, (msg, match) => {
     }
 });
 
-bot.onText(/\/add (.+)/ , (msg) => {
-    const amount = parseFloat(match[1]); 
+bot.onText(/\/add (.+)/, (msg, match) => {
+    console.log(msg);
+    const amount = parseFloat(match[1]);
+
     if (isNaN(amount)) {
-        bot.sendMessage(msg.chat.id, 'Please specify a valid bet amount!');
+        bot.sendMessage(msg.chat.id, 'Please specify a valid amount!');
     } else {
         balance += amount;
         bot.sendMessage(msg.chat.id, `You have added $${amount} to your balance`);
