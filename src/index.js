@@ -36,6 +36,7 @@ bot.onText(/\/bet (.+)/, (msg, match) => {
 });
 
 bot.onText(/\/add (.+)/ , (msg) => {
+    const amount = parseFloat(match[1]); 
     if (isNaN(amount)) {
         bot.sendMessage(msg.chat.id, 'Please specify a valid bet amount!');
     } else {
