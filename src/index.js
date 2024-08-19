@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
+const { init, updateUser, getUserData } = require('./firebase');
+
 const token = process.env.TOKEN;
 const port = process.env.PORT || 4000;
 
@@ -25,7 +27,8 @@ let betAmount = 0;
 
 
 bot.onText(/\/start/, (msg) => {
-    bot.sendMessage(msg.chat.id, 'Welcome to the gambling bot!');
+    init(msg.chat.id)
+    bot.sendMessage(msg.chat.id, 'TEST: Welcome to the gambling bot!');
     balance = 1000, 
     betNumber = null;
     betAmount = 0;
@@ -38,64 +41,67 @@ bot.onText(/\/help/, (msg) => {
 bot.onText(/\/spin/, (msg)=>{
     console.log(msg)
     if(betNumber === null){
-        bot.sendMessage(msg.chat.id, `You didn't place any bet!`);
+        bot.sendMessage(msg.chat.id, `TEST: You didn't place any bet!`);
         return;
     }
     bot.sendDocument(msg.chat.id, 'https://media.giphy.com/media/wScuGYwe1eDvjeNYWD/giphy.gif');
     const winningNumber = Math.floor(Math.random() * 37);
+
     if(betNumber == winningNumber){
-        bot.sendMessage(msg.chat.id, `Congratulations! You won $${betAmount * 36}`);
+        bot.sendMessage(msg.chat.id, `TEST: Congratulations! You won $${betAmount * 36}`);
+        updateUser(msg.chat.id, {balance: balance + betAmount * 36, betNumber: null, betAmount: 0});
+        //TODO remove
         balance += betAmount * 36;
         betNumber = null;
     }else{
-        bot.sendMessage(msg.chat.id, `Tough luck! You lost $${betAmount} \n The winning number was ${winningNumber}`);
+        bot.sendMessage(msg.chat.id, `TEST: Tough luck! You lost $${betAmount} \n The winning number was ${winningNumber}`);
+        updateUser(msg.chat.id, {balance: balance, betNumber: null, betAmount: 0});
+        //TODO remove
         betNumber = null;
     }
     betAmount = 0;
 });
 
 bot.onText(/\/balance/, (msg) => {
-    bot.sendMessage(msg.chat.id, `Your current balance is ${balance} \n You have placed a bet of $${betAmount}`);
+    bot.sendMessage(msg.chat.id, `TEST: Your current balance is ${balance} \n You have placed a bet of $${betAmount}`);
 });
 
 bot.onText(/\/number\s*(\d*)/, (msg, match) => {
-    // match[1] will be the argument if provided, otherwise an empty string
-    const numberArg = match[1].trim(); // Get and trim the argument
+    const numberArg = match[1].trim();
 
-    // Check if a number was provided
     if (numberArg === "") {
-        bot.sendMessage(msg.chat.id, "Please provide a number after the /number command.");
+        bot.sendMessage(msg.chat.id, "TEST: Please provide a number after the /number command.");
         return;
     }
 
-    const number = parseInt(numberArg, 10); // Convert to integer
+    const number = parseInt(numberArg, 10);
 
-    // Validate the number
     if (isNaN(number) || number < 0 || number > 36) {
-        bot.sendMessage(msg.chat.id, "Please specify a valid number between 0 and 36!");
+        bot.sendMessage(msg.chat.id, "TEST: Please specify a valid number between 0 and 36!");
         return;
     }
 
-    // If the number is valid, save it and confirm the bet
     betNumber = number;
-    bot.sendMessage(msg.chat.id, `You have placed a bet on ${betNumber}`);
+    bot.sendMessage(msg.chat.id, `TEST: You have placed a bet on ${betNumber}`);
 });
 
 
 bot.onText(/\/bet (.+)/, (msg, match) => {
     const amount = match[1];
     if(amount === "all"){
-        bot.sendMessage(msg.chat.id, `You have placed a bet of $${balance}`);
+        bot.sendMessage(msg.chat.id, `TEST: You have placed a bet of $${balance}`);
         betAmount += balance;
         balance = 0;
     }else if (isNaN(amount)) {
-        bot.sendMessage(msg.chat.id, 'Please specify a valid bet amount!');
+        bot.sendMessage(msg.chat.id, 'TEST: Please specify a valid bet amount!');
     } else {
         if(amount > balance){
-            bot.sendMessage(msg.chat.id, `You don't have enough balance to place a bet of $${amount}`);
+            bot.sendMessage(msg.chat.id, `TEST: You don't have enough balance to place a bet of $${amount}`);
             return;
         }else{
-            bot.sendMessage(msg.chat.id, `You have placed a bet of $${amount}`);
+            bot.sendMessage(msg.chat.id, `TEST: You have placed a bet of $${amount}`);
+            updateUser(msg.chat.id, {balance: balance - amount, betAmount: amount});
+            //TODO remove
             balance -= amount
             betAmount = amount;
         }
@@ -105,12 +111,13 @@ bot.onText(/\/bet (.+)/, (msg, match) => {
 bot.onText(/\/add (.+)/, (msg, match) => {
     console.log(msg);
     const amount = parseFloat(match[1]);
-
+    userData = getUserData(msg.chat.id);
     if (isNaN(amount)) {
-        bot.sendMessage(msg.chat.id, 'Please specify a valid amount!');
+        bot.sendMessage(msg.chat.id, 'TEST: Please specify a valid amount!');
     } else {
+        updateUser(msg.chat.id, {balance: balance + amount});
         balance += amount;
-        bot.sendMessage(msg.chat.id, `You have added $${amount} to your balance`);
+        bot.sendMessage(msg.chat.id, `TEST: You have added $${amount} to your balance`);
     }
 });
 
@@ -122,4 +129,8 @@ app.get('/', (req, res) => {
 
 app.listen(port, ()=>{
     console.log(`App is listening on port ${port}`)
+});
+
+bot.on('polling_error', (error) => {
+    console.error('Polling error occurred:', error);
 });

@@ -1,18 +1,64 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
+const admin = require('firebase-admin');
+
+require('dotenv').config();
+
+const serviceAccount = require("../firestoreKey.json");
+const { get } = require('http');
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+const db = admin.firestore();
+
+const init = async (chatId) => {
+  try{
+    const userRef = db.collection('users').doc(chatId.toString());
+    const user = await userRef.get();
+    if(!user.exists){
+        await userRef.set({
+            balance: 1000,
+            betAmount: 0,
+            betNumber: null,
+        });
+    }
+  }catch(err){
+    console.log(err);
+    throw err;
+  }
+}
 
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBlJxA0nKzUdSpVY0V7wmgEGrnnOEtAPIY",
-  authDomain: "gamblingbot-a0e7b.firebaseapp.com",
-  projectId: "gamblingbot-a0e7b",
-  storageBucket: "gamblingbot-a0e7b.appspot.com",
-  messagingSenderId: "863600875546",
-  appId: "1:863600875546:web:6dee746e6f38d3598959a3",
-  measurementId: "G-BC8RCQL09N"
+const updateUser = async (chatId, updates) => {
+  const userRef = db.collection('users').doc(chatId.toString());
+
+  try {
+      await userRef.update(updates);
+      console.log(`User with chatId ${chatId} has been updated.`);
+  } catch (err) {
+      console.error('Error updating document:', err);
+  }
+};
+
+const getUserData = async (chatId) => {
+  const userRef = db.collection('users').doc(chatId.toString());
+
+  try {
+      const doc = await userRef.get();
+      if (doc.exists) {
+          console.log('Document data:', doc.data());
+          return doc.data();
+      } else {
+          console.log('No such document!');
+          return null;
+      }
+  } catch (err) {
+      console.error('Error getting document:', err);
+      throw err;
+  }
 };
 
 
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 
+
+module.exports= { init, updateUser, getUserData };
